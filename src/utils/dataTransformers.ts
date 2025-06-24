@@ -8,34 +8,79 @@ import type {
   ChatConversation 
 } from '../types/api';
 
-// ✅ ARREGLO: Especificar tipos exactos para role
-const TEST_USERS = [
-  { id: 1, name: 'Ana Torres', role: 'mentor' as const, avatar: 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2' },
-  { id: 2, name: 'Jose Perez', role: 'colaborador' as const, avatar: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2' },
-  { id: 3, name: 'Luisa Gomez', role: 'mentor' as const, avatar: 'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2' },
-  { id: 4, name: 'Marco Diaz', role: 'colaborador' as const, avatar: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2' },
+// ✅ POOL DE AVATARES PÚBLICOS (20 imágenes variadas)
+const AVATAR_POOL = [
+  'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/1484794/pexels-photo-1484794.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/1559486/pexels-photo-1559486.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/1674752/pexels-photo-1674752.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/1758144/pexels-photo-1758144.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/1844547/pexels-photo-1844547.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/1933873/pexels-photo-1933873.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/2381069/pexels-photo-2381069.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/2709388/pexels-photo-2709388.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/2741701/pexels-photo-2741701.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
+  'https://images.pexels.com/photos/3211476/pexels-photo-3211476.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2'
 ];
 
-// ✅ FUNCIÓN para obtener datos de usuario por ID
-const getUserById = (userId: number): { name: string; avatar: string; role: 'mentor' | 'colaborador' } => {
-  const user = TEST_USERS.find(u => u.id === userId);
-  return user || { 
-    name: `Usuario ${userId}`, 
-    avatar: 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
-    role: 'colaborador' as const
+// ✅ FUNCIÓN para asignar avatar basado en ID de usuario
+const getAvatarForUser = (userId: number): string => {
+  // Usar módulo para asignar avatar de forma consistente
+  const avatarIndex = userId % AVATAR_POOL.length;
+  return AVATAR_POOL[avatarIndex];
+};
+
+// ✅ FUNCIÓN para mapear roles del backend a frontend
+const mapBackendRoleToFrontend = (backendRole: string): 'mentor' | 'colaborador' => {
+  // Mapear roles del backend (pueden ser diferentes)
+  switch (backendRole?.toLowerCase()) {
+    case 'mentor':
+    case 'mentors':
+      return 'mentor';
+    case 'colaborador':
+    case 'colaboradores':
+    case 'collaborator':
+    case 'user':
+    default:
+      return 'colaborador';
+  }
+};
+
+// ✅ TRANSFORMAR Usuario del backend a ChatUser del frontend
+export const transformUsuarioToChatUser = (usuario: Usuario): ChatUser => {
+  return {
+    id: usuario.id,
+    name: usuario.nombre, // ✅ USAR NOMBRE REAL DEL BACKEND
+    email: usuario.email,
+    avatar: getAvatarForUser(usuario.id), // ✅ ASIGNAR AVATAR BASADO EN ID
+    role: 'colaborador', // ✅ DEFAULT - se actualizará con datos reales si están disponibles
+    status: 'online',
+    expertise: []
   };
 };
 
-// Transformar Usuario del backend a ChatUser del frontend
-export const transformUsuarioToChatUser = (usuario: Usuario): ChatUser => {
-  const userData = getUserById(usuario.id);
-  
+// ✅ TRANSFORMAR Usuario con información completa (cuando tenemos rol)
+export const transformUsuarioCompletoToChatUser = (
+  id: number, 
+  nombre: string, 
+  email: string, 
+  role?: string
+): ChatUser => {
   return {
-    id: usuario.id,
-    name: userData.name, // ✅ USAR NOMBRE REAL, NO "Tú"
-    email: usuario.email,
-    avatar: userData.avatar,
-    role: userData.role,
+    id,
+    name: nombre, // ✅ NOMBRE REAL DEL BACKEND
+    email,
+    avatar: getAvatarForUser(id), // ✅ AVATAR CONSISTENTE BASADO EN ID
+    role: role ? mapBackendRoleToFrontend(role) : 'colaborador',
     status: 'online',
     expertise: []
   };
@@ -48,9 +93,10 @@ export const transformMensajeDTOToChatMessage = (mensajeDTO: MensajeDTO): ChatMe
     throw new Error('MensajeDTO sin ID válido');
   }
 
+  // ✅ USAR DATOS REALES DEL BACKEND
   const emisor: Usuario = {
     id: mensajeDTO.emisorId,
-    nombre: mensajeDTO.emisorNombre,
+    nombre: mensajeDTO.emisorNombre, // ✅ NOMBRE REAL
     email: mensajeDTO.emisorEmail
   };
 
@@ -65,20 +111,7 @@ export const transformMensajeDTOToChatMessage = (mensajeDTO: MensajeDTO): ChatMe
   };
 };
 
-// ✅ NUEVO: Interfaz para el mensaje completo que viene del backend
-interface MensajeCompletoWebSocket {
-  id: number;
-  contenido: string;
-  leido: boolean;
-  timestampEnvio: string;
-  emisor: {
-    id: number;
-    nombre: string;
-    email: string;
-  };
-}
-
-// ✅ ARREGLO CRÍTICO: Transformar mensaje WebSocket con nueva estructura
+// ✅ ARREGLO CRÍTICO: Transformar mensaje WebSocket con estructura real
 export const transformMensajeToChatMessage = (mensaje: any): ChatMessage => {
   console.log('🔄 Transformando mensaje WebSocket:', mensaje);
   
@@ -95,7 +128,7 @@ export const transformMensajeToChatMessage = (mensaje: any): ChatMessage => {
     console.log('✅ Mensaje con emisor completo detectado');
     emisorData = {
       id: mensaje.emisor.id,
-      nombre: mensaje.emisor.nombre,
+      nombre: mensaje.emisor.nombre || mensaje.emisor.name, // ✅ FLEXIBILIDAD EN NOMBRES
       email: mensaje.emisor.email
     };
   } else {
@@ -138,38 +171,38 @@ export const transformMensajeToChatMessage = (mensaje: any): ChatMessage => {
   return chatMessage;
 };
 
-// ✅ ARREGLO CRÍTICO: Transformar ConversacionResumenDTO a ChatConversation
+// ✅ TRANSFORMAR ConversacionResumenDTO a ChatConversation CON DATOS REALES
 export const transformConversacionResumenToChatConversation = (
   resumen: ConversacionResumenDTO,
   currentUserId: number
 ): ChatConversation => {
-  // ✅ CREAR USUARIO ACTUAL CON NOMBRE REAL
-  const currentUserData = getUserById(currentUserId);
+  
+  // ✅ CREAR USUARIO ACTUAL - Solo necesitamos ID para identificación
   const currentUser: ChatUser = {
     id: currentUserId,
-    name: 'Tú', // ✅ MANTENER "Tú" para identificar al usuario actual en notificaciones
+    name: 'Tú', // ✅ MANTENER "Tú" para identificar al usuario actual
     email: '',
-    avatar: currentUserData.avatar,
-    role: currentUserData.role,
+    avatar: getAvatarForUser(currentUserId),
+    role: 'colaborador', // ✅ Se actualizará con datos reales si están disponibles
     status: 'online'
   };
 
-  // ✅ CREAR OTRO USUARIO CON DATOS REALES
-  const otherUserData = getUserById(resumen.idOtroUsuario);
+  // ✅ CREAR OTRO USUARIO CON DATOS REALES DEL BACKEND
   const otherUser: ChatUser = {
     id: resumen.idOtroUsuario,
-    name: otherUserData.name, // ✅ USAR NOMBRE REAL DEL OTRO USUARIO
-    email: resumen.emailOtroUsuario,
-    avatar: otherUserData.avatar,
-    role: otherUserData.role,
+    name: resumen.nombreOtroUsuario, // ✅ NOMBRE REAL DEL BACKEND
+    email: resumen.emailOtroUsuario, // ✅ EMAIL REAL DEL BACKEND
+    avatar: getAvatarForUser(resumen.idOtroUsuario), // ✅ AVATAR CONSISTENTE
+    role: 'colaborador', // ✅ DEFAULT - se puede mejorar si el backend envía el rol
     status: 'online'
   };
 
   // ✅ DETERMINAR QUIÉN ENVIÓ EL ÚLTIMO MENSAJE
-  const lastMessageSenderId = resumen.idOtroUsuario; // Asumimos que viene del otro usuario por defecto
+  // Por ahora asumimos que viene del otro usuario, pero se puede mejorar
+  const lastMessageSenderId = resumen.idOtroUsuario;
   
   const lastMessage: ChatMessage = {
-    id: 0,
+    id: 0, // ✅ ID temporal para último mensaje
     senderId: lastMessageSenderId,
     content: resumen.ultimoMensaje,
     timestamp: new Date(resumen.timestampUltimoMensaje),
@@ -180,13 +213,11 @@ export const transformConversacionResumenToChatConversation = (
 
   return {
     id: resumen.idConversacion,
-    // ✅ CRÍTICO: INCLUIR AMBOS USUARIOS PARA QUE EL FRONTEND PUEDA IDENTIFICAR AL "OTRO"
-    participants: [currentUser, otherUser],
+    participants: [currentUser, otherUser], // ✅ AMBOS USUARIOS
     lastMessage,
     unreadCount: resumen.mensajesNoLeidos,
     updatedAt: new Date(resumen.timestampUltimoMensaje),
-    // ✅ CRÍTICO: EL TÍTULO DEBE SER EL NOMBRE DEL OTRO USUARIO
-    title: otherUserData.name,
+    title: resumen.nombreOtroUsuario, // ✅ NOMBRE REAL DEL OTRO USUARIO
     type: 'direct'
   };
 };
