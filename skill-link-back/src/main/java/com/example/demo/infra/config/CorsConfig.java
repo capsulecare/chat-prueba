@@ -16,10 +16,12 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Permitir orígenes específicos (incluye localhost para desarrollo y tu dominio de producción)
+        // ✅ ORÍGENES PERMITIDOS - Más específicos para desarrollo
         configuration.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:*",
                 "https://localhost:*",
+                "http://127.0.0.1:*",
+                "https://127.0.0.1:*",
                 "https://*.netlify.app",
                 "https://*.vercel.app",
                 "https://*.onrender.com",
@@ -45,7 +47,7 @@ public class CorsConfig {
                 "Access-Control-Request-Headers"
         ));
 
-        // PERMITIR credenciales (necesario para JWT)
+        // ✅ PERMITIR credenciales (necesario para JWT)
         configuration.setAllowCredentials(true);
 
         // Tiempo de cache para preflight requests

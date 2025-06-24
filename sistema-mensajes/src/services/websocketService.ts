@@ -11,6 +11,8 @@ class WebSocketService {
   private connected = false;
   private subscriptions = new Map<string, any>();
   private connectionPromise: Promise<void> | null = null;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
 
   connect(): Promise<void> {
     // ✅ Evitar múltiples conexiones simultáneas
@@ -29,51 +31,95 @@ class WebSocketService {
 
     this.connectionPromise = new Promise((resolve, reject) => {
       this.client = new Client({
-        webSocketFactory: () => new WebSocket('ws://localhost:8080/ws'),
+        // ✅ CONFIGURACIÓN MEJORADA
+        webSocketFactory: () => {
+          const ws = new WebSocket('ws://localhost:8080/ws');
+          
+          // ✅ Logs detallados para debugging
+          ws.onopen = () => console.log('🔌 WebSocket nativo conectado');
+          ws.onerror = (error) => console.error('❌ WebSocket nativo error:', error);
+          ws.onclose = (event) => console.log('🔌 WebSocket nativo cerrado:', event.code, event.reason);
+          
+          return ws;
+        },
+        
+        // ✅ CONFIGURACIÓN DE RECONEXIÓN MEJORADA
         reconnectDelay: 5000,
-        heartbeatIncoming: 4000,
-        heartbeatOutgoing: 4000,
+        heartbeatIncoming: 10000,
+        heartbeatOutgoing: 10000,
+        
+        // ✅ CONFIGURACIÓN DE TIMEOUTS
+        connectionTimeout: 10000,
+        
         debug: (str) => {
           console.log('🔍 STOMP Debug:', str);
         },
+        
         onConnect: (frame) => {
-          console.log('✅ WebSocket conectado exitosamente!', frame);
+          console.log('✅ STOMP conectado exitosamente!', frame);
           this.connected = true;
-          this.connectionPromise = null; // ✅ Limpiar promesa
+          this.reconnectAttempts = 0; // ✅ Reset contador
+          this.connectionPromise = null;
           resolve();
         },
+        
         onStompError: (frame) => {
           console.error('❌ STOMP error:', frame.headers['message']);
           console.error('❌ Detalles:', frame.body);
           this.connected = false;
-          this.connectionPromise = null; // ✅ Limpiar promesa
+          this.connectionPromise = null;
           reject(new Error(`STOMP error: ${frame.headers['message']}`));
         },
+        
         onWebSocketError: (error) => {
           console.error('❌ WebSocket error:', error);
           this.connected = false;
-          this.connectionPromise = null; // ✅ Limpiar promesa
-          reject(error);
+          this.connectionPromise = null;
+          
+          // ✅ MANEJO DE RECONEXIÓN
+          if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            console.log(`🔄 Intento de reconexión ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+            setTimeout(() => {
+              this.connectionPromise = null;
+              this.connect();
+            }, 2000 * this.reconnectAttempts);
+          } else {
+            console.error('❌ Máximo de intentos de reconexión alcanzado');
+            reject(error);
+          }
         },
+        
         onDisconnect: (frame) => {
-          console.log('🔌 WebSocket desconectado:', frame);
+          console.log('🔌 STOMP desconectado:', frame);
           this.connected = false;
           this.subscriptions.clear();
-          this.connectionPromise = null; // ✅ Limpiar promesa
+          this.connectionPromise = null;
         },
+        
         onWebSocketClose: (event) => {
-          console.log('🔌 WebSocket cerrado:', event);
+          console.log('🔌 WebSocket cerrado:', event.code, event.reason);
           this.connected = false;
-          this.connectionPromise = null; // ✅ Limpiar promesa
+          this.connectionPromise = null;
+          
+          // ✅ RECONEXIÓN AUTOMÁTICA si no fue cierre intencional
+          if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            console.log(`🔄 Reconexión automática ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+            setTimeout(() => {
+              this.connectionPromise = null;
+              this.connect();
+            }, 3000);
+          }
         }
       });
 
       try {
+        console.log('🔄 Activando cliente STOMP...');
         this.client.activate();
-        console.log('🔄 Cliente WebSocket activado...');
       } catch (error) {
         console.error('❌ Error activando cliente:', error);
-        this.connectionPromise = null; // ✅ Limpiar promesa
+        this.connectionPromise = null;
         reject(error);
       }
     });
@@ -95,10 +141,11 @@ class WebSocketService {
       this.client.deactivate();
       this.connected = false;
       this.connectionPromise = null;
+      this.reconnectAttempts = 0;
     }
   }
 
-  // Suscribirse a mensajes de una conversación
+  // ✅ RESTO DE MÉTODOS SIN CAMBIOS
   subscribeToConversation(
     idConversacion: number, 
     onMessage: MessageHandler
@@ -110,7 +157,6 @@ class WebSocketService {
     const topic = API_CONFIG.WEBSOCKET.TOPICS.CONVERSACION(idConversacion);
     const subscriptionKey = `conversation-${idConversacion}`;
     
-    // ✅ Evitar suscripciones duplicadas
     if (this.subscriptions.has(subscriptionKey)) {
       console.log('🔄 Ya suscrito a:', topic);
       const existingSubscription = this.subscriptions.get(subscriptionKey);
@@ -135,7 +181,6 @@ class WebSocketService {
 
     this.subscriptions.set(subscriptionKey, subscription);
 
-    // Retornar función para desuscribirse
     return () => {
       console.log('🚫 Desuscribiéndose de:', topic);
       try {
@@ -147,7 +192,6 @@ class WebSocketService {
     };
   }
 
-  // Suscribirse a notificaciones de "escribiendo"
   subscribeToTyping(
     idConversacion: number, 
     onTyping: TypingHandler
@@ -159,7 +203,6 @@ class WebSocketService {
     const topic = API_CONFIG.WEBSOCKET.TOPICS.TYPING(idConversacion);
     const subscriptionKey = `typing-${idConversacion}`;
     
-    // ✅ Evitar suscripciones duplicadas
     if (this.subscriptions.has(subscriptionKey)) {
       console.log('🔄 Ya suscrito a typing:', topic);
       const existingSubscription = this.subscriptions.get(subscriptionKey);
@@ -193,7 +236,6 @@ class WebSocketService {
     };
   }
 
-  // Suscribirse a notificaciones de "leído"
   subscribeToRead(
     idConversacion: number, 
     onRead: ReadHandler
@@ -205,7 +247,6 @@ class WebSocketService {
     const topic = API_CONFIG.WEBSOCKET.TOPICS.LEIDO(idConversacion);
     const subscriptionKey = `read-${idConversacion}`;
     
-    // ✅ Evitar suscripciones duplicadas
     if (this.subscriptions.has(subscriptionKey)) {
       console.log('🔄 Ya suscrito a read:', topic);
       const existingSubscription = this.subscriptions.get(subscriptionKey);
@@ -236,7 +277,6 @@ class WebSocketService {
     };
   }
 
-  // Enviar mensaje por WebSocket
   sendMessage(message: MensajeWebSocketDTO): void {
     if (!this.client || !this.connected) {
       throw new Error('WebSocket not connected');
@@ -257,7 +297,6 @@ class WebSocketService {
     }
   }
 
-  // Notificar que el usuario está escribiendo
   sendTypingNotification(typing: UsuarioEscribiendoDTO): void {
     if (!this.client || !this.connected) {
       console.warn('⚠️ WebSocket no conectado, no se puede enviar typing notification');
@@ -274,7 +313,6 @@ class WebSocketService {
     }
   }
 
-  // Marcar mensajes como leídos por WebSocket
   markAsRead(request: MarcarLeidosRequest): void {
     if (!this.client || !this.connected) {
       console.warn('⚠️ WebSocket no conectado, no se puede marcar como leído');
