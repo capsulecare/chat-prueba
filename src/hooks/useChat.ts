@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiService } from '../services/apiService';
-import { websocketService } from '../services/websocketService';
+import { websocketService } from '../services/websocket';
 import type { 
   ConversacionResumenDTO, 
   Mensaje, 
@@ -37,7 +37,7 @@ export const useChat = (currentUserId: number) => {
     setActiveConversationId(conversationId);
   }, []);
 
-  // ✅ SUSCRIPCIÓN WEBSOCKET RESTAURADA
+  // ✅ SUSCRIPCIÓN WEBSOCKET CON SERVICIO MODULAR
   useEffect(() => {
     if (!websocketService.isConnected() || conversations.length === 0) {
       return;
