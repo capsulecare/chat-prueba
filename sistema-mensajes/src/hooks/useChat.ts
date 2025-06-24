@@ -25,7 +25,7 @@ export const useChat = (currentUserId: number) => {
   const [typingUsers, setTypingUsers] = useState<{ [conversationId: number]: number[] }>({});
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   
-  // ✅ NUEVO: Estados para paginación
+  // ✅ Estados para paginación
   const [hasMoreMessages, setHasMoreMessages] = useState<{ [conversationId: number]: boolean }>({});
   const [loadingMoreMessages, setLoadingMoreMessages] = useState<{ [conversationId: number]: boolean }>({});
   const [messagePage, setMessagePage] = useState<{ [conversationId: number]: number }>({});
@@ -37,7 +37,24 @@ export const useChat = (currentUserId: number) => {
     setActiveConversationId(conversationId);
   }, []);
 
-  // ✅ SUSCRIPCIÓN WEBSOCKET
+  // ✅ FUNCIÓN PARA RECARGAR CONVERSACIONES
+  const reloadConversations = useCallback(async () => {
+    try {
+      console.log('🔄 Recargando conversaciones...');
+      const conversationsData = await apiService.listarResumenesConversaciones(currentUserId);
+      
+      const transformedConversations = conversationsData.map(resumen => 
+        transformConversacionResumenToChatConversation(resumen, currentUserId)
+      );
+      
+      setConversations(transformedConversations);
+      console.log('✅ Conversaciones recargadas:', transformedConversations.length);
+    } catch (err) {
+      console.error('❌ Error recargando conversaciones:', err);
+    }
+  }, [currentUserId]);
+
+  // ✅ SUSCRIPCIÓN WEBSOCKET MEJORADA
   useEffect(() => {
     if (!websocketService.isConnected() || conversations.length === 0) {
       return;
@@ -51,11 +68,20 @@ export const useChat = (currentUserId: number) => {
       try {
         const unsubscribe = websocketService.subscribeToConversation(
           conversation.id,
-          (mensaje: Mensaje) => {
+          async (mensaje: Mensaje) => {
             console.log('📨 MENSAJE RECIBIDO:', mensaje);
             
             const chatMessage = transformMensajeToChatMessage(mensaje);
             console.log('🔄 Mensaje transformado:', chatMessage);
+            
+            // ✅ VERIFICAR SI LA CONVERSACIÓN EXISTE
+            const conversationExists = conversations.some(conv => conv.id === conversation.id);
+            
+            if (!conversationExists) {
+              console.log('🆕 Mensaje de conversación nueva detectado - Recargando conversaciones...');
+              // ✅ RECARGAR CONVERSACIONES CUANDO LLEGA MENSAJE DE CONVERSACIÓN NUEVA
+              await reloadConversations();
+            }
             
             setMessages(prev => {
               const currentMessages = prev[conversation.id] || [];
@@ -124,7 +150,42 @@ export const useChat = (currentUserId: number) => {
         }
       });
     };
-  }, [conversations.length, currentUserId, activeConversationId]);
+  }, [conversations.length, currentUserId, activeConversationId, reloadConversations]);
+
+  // ✅ SUSCRIPCIÓN GLOBAL PARA NUEVAS CONVERSACIONES
+  useEffect(() => {
+    if (!websocketService.isConnected()) {
+      return;
+    }
+
+    console.log('🌐 Configurando suscripción global para nuevas conversaciones...');
+
+    // ✅ SUSCRIBIRSE A UN TOPIC GLOBAL DEL USUARIO
+    const globalTopic = `/topic/user/${currentUserId}/new-conversation`;
+    
+    const unsubscribeGlobal = websocketService.subscribeToConversation(
+      0, // ID especial para suscripción global
+      async (mensaje: Mensaje) => {
+        console.log('🆕 NUEVA CONVERSACIÓN DETECTADA:', mensaje);
+        
+        // ✅ RECARGAR CONVERSACIONES CUANDO SE DETECTA UNA NUEVA
+        await reloadConversations();
+        
+        // ✅ TAMBIÉN AGREGAR EL MENSAJE A LA NUEVA CONVERSACIÓN
+        const chatMessage = transformMensajeToChatMessage(mensaje);
+        
+        setMessages(prev => ({
+          ...prev,
+          [mensaje.conversacion?.id || 0]: [chatMessage]
+        }));
+      }
+    );
+
+    return () => {
+      console.log('🧹 Limpiando suscripción global');
+      unsubscribeGlobal();
+    };
+  }, [currentUserId, reloadConversations]);
 
   // Cargar conversaciones
   const loadConversations = useCallback(async () => {
@@ -178,15 +239,13 @@ export const useChat = (currentUserId: number) => {
     }
   }, []);
 
-  // ✅ NUEVO: CARGAR MÁS MENSAJES (paginación)
+  // ✅ CARGAR MÁS MENSAJES (paginación)
   const loadMoreMessages = useCallback(async (conversationId: number, page: number): Promise<ChatMessage[]> => {
     try {
       console.log('📥 Cargando más mensajes - Conversación:', conversationId, 'Página:', page);
       
       setLoadingMoreMessages(prev => ({ ...prev, [conversationId]: true }));
       
-      // ✅ AQUÍ NECESITARÁS EL ENDPOINT DE PAGINACIÓN DEL BACKEND
-      // Por ahora simulo la respuesta
       const mensajesDTO = await apiService.obtenerMensajesPaginados(conversationId, page, 20);
       
       if (mensajesDTO.length === 0) {
@@ -241,6 +300,12 @@ export const useChat = (currentUserId: number) => {
         console.log('🚀 Enviando por WebSocket:', messageDto);
         websocketService.sendMessage(messageDto);
         console.log('✅ Mensaje enviado por WebSocket');
+        
+        // ✅ DESPUÉS DE ENVIAR, RECARGAR CONVERSACIONES POR SI ES UNA NUEVA
+        setTimeout(async () => {
+          await reloadConversations();
+        }, 500);
+        
       } else {
         console.log('❌ WebSocket no conectado');
         throw new Error('WebSocket no conectado');
@@ -249,7 +314,7 @@ export const useChat = (currentUserId: number) => {
       setError('Error al enviar mensaje');
       console.error('❌ Error sending message:', err);
     }
-  }, [currentUserId]);
+  }, [currentUserId, reloadConversations]);
 
   // Marcar mensajes como leídos
   const markAsRead = useCallback(async (conversationId: number) => {
@@ -322,17 +387,17 @@ export const useChat = (currentUserId: number) => {
     typingUsers,
     activeConversationId,
     currentUserId,
-    // ✅ NUEVOS: Estados de paginación
     hasMoreMessages,
     loadingMoreMessages,
     loadConversations,
     loadMessages,
-    loadMoreMessages, // ✅ NUEVA FUNCIÓN
+    loadMoreMessages,
     sendMessage,
     markAsRead,
     sendTypingNotification,
     handleTypingNotification,
     setActiveConversation,
-    setError
+    setError,
+    reloadConversations // ✅ EXPONER FUNCIÓN PARA USO MANUAL
   };
 };
