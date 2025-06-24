@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Users, MessageCircle, RefreshCw } from 'lucide-react';
 import { apiService } from '../../services/apiService';
+import { getAvatarForUser, getRoleColor, formatRole } from '../../constants/avatars.js';
 
 interface UserSelectorProps {
   currentUserId: number;
@@ -14,53 +15,6 @@ interface BackendUser {
   email: string;
   role: string;
 }
-
-// ✅ POOL DE AVATARES (mismo que en dataTransformers)
-const AVATAR_POOL = [
-  'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
-  'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
-  'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
-  'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
-  'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
-  'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
-  'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
-  'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
-  'https://images.pexels.com/photos/1484794/pexels-photo-1484794.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
-  'https://images.pexels.com/photos/1559486/pexels-photo-1559486.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2'
-];
-
-const getAvatarForUser = (userId: number): string => {
-  const avatarIndex = userId % AVATAR_POOL.length;
-  return AVATAR_POOL[avatarIndex];
-};
-
-const getRoleColor = (role: string) => {
-  switch (role?.toLowerCase()) {
-    case 'mentor':
-      return 'bg-purple-500';
-    case 'colaborador':
-    case 'collaborator':
-      return 'bg-blue-500';
-    case 'admin':
-      return 'bg-red-500';
-    default:
-      return 'bg-gray-500';
-  }
-};
-
-const formatRole = (role: string) => {
-  switch (role?.toLowerCase()) {
-    case 'mentor':
-      return 'Mentor';
-    case 'colaborador':
-    case 'collaborator':
-      return 'Colaborador';
-    case 'admin':
-      return 'Admin';
-    default:
-      return 'Usuario';
-  }
-};
 
 export const UserSelector: React.FC<UserSelectorProps> = ({ 
   currentUserId, 
