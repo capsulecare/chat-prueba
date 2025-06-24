@@ -12,14 +12,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Habilitar broker simple para topics y queues
-        config.enableSimpleBroker("/topic", "/queue");
+        // ✅ Habilitar broker simple para topics y queues
+        config.enableSimpleBroker("/topic", "/queue")
+              .setHeartbeatValue(new long[]{10000, 10000}); // ✅ CORRECCIÓN: Aplicar heartbeat al broker
         
-        // Prefijo para destinos de aplicación
+        // ✅ Prefijo para destinos de aplicación
         config.setApplicationDestinationPrefixes("/app");
-        
-        // Configurar heartbeat para mantener conexión viva
-        config.setHeartbeatValue(new long[]{10000, 10000});
     }
 
     @Override
@@ -45,6 +43,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 )
                 .setAllowedHeaders("*")
                 .withSockJS()
-                .setHeartbeatTime(25000); // Heartbeat para SockJS
+                .setHeartbeatTime(25000); // ✅ Heartbeat específico para SockJS
     }
 }
