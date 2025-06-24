@@ -7,7 +7,7 @@ import type {
   ChatMessage, 
   ChatConversation 
 } from '../types/api';
-import { getAvatarForUser, mapBackendRoleToFrontend } from '../constants/avatars.js';
+import { getAvatarForUser, mapBackendRoleToFrontend } from '../constants/avatars';
 
 // ✅ TRANSFORMAR Usuario del backend a ChatUser del frontend
 export const transformUsuarioToChatUser = (usuario: Usuario): ChatUser => {

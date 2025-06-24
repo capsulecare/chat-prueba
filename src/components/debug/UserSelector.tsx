@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Users, MessageCircle, RefreshCw } from 'lucide-react';
 import { apiService } from '../../services/apiService';
-import { getAvatarForUser, getRoleColor, formatRole } from '../../constants/avatars.js';
+import { getAvatarForUser, getRoleColor, formatRole } from '../../constants/avatars';
 
 interface UserSelectorProps {
   currentUserId: number;

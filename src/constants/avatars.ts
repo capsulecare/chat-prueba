@@ -2,7 +2,7 @@
  * Pool de avatares públicos de Pexels
  * 20 imágenes variadas para asignar a usuarios de forma consistente
  */
-export const AVATAR_POOL = [
+export const AVATAR_POOL: string[] = [
   'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
   'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
   'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2',
@@ -26,21 +26,26 @@ export const AVATAR_POOL = [
 ];
 
 /**
- * Asigna un avatar de forma consistente basado en el ID del usuario
- * @param {number} userId - ID del usuario
- * @returns {string} URL del avatar asignado
+ * Tipos para roles del frontend
  */
-export const getAvatarForUser = (userId) => {
+export type FrontendRole = 'mentor' | 'colaborador';
+
+/**
+ * Asigna un avatar de forma consistente basado en el ID del usuario
+ * @param userId - ID del usuario
+ * @returns URL del avatar asignado
+ */
+export const getAvatarForUser = (userId: number): string => {
   const avatarIndex = userId % AVATAR_POOL.length;
   return AVATAR_POOL[avatarIndex];
 };
 
 /**
  * Mapea roles del backend a roles del frontend
- * @param {string} backendRole - Rol del backend
- * @returns {'mentor' | 'colaborador'} Rol mapeado para el frontend
+ * @param backendRole - Rol del backend
+ * @returns Rol mapeado para el frontend
  */
-export const mapBackendRoleToFrontend = (backendRole) => {
+export const mapBackendRoleToFrontend = (backendRole: string): FrontendRole => {
   switch (backendRole?.toLowerCase()) {
     case 'mentor':
     case 'mentors':
@@ -56,10 +61,10 @@ export const mapBackendRoleToFrontend = (backendRole) => {
 
 /**
  * Obtiene el color asociado a un rol
- * @param {string} role - Rol del usuario
- * @returns {string} Clase CSS para el color
+ * @param role - Rol del usuario
+ * @returns Clase CSS para el color
  */
-export const getRoleColor = (role) => {
+export const getRoleColor = (role: string): string => {
   switch (role?.toLowerCase()) {
     case 'mentor':
       return 'bg-purple-500';
@@ -75,10 +80,10 @@ export const getRoleColor = (role) => {
 
 /**
  * Formatea el nombre del rol para mostrar
- * @param {string} role - Rol del usuario
- * @returns {string} Nombre formateado del rol
+ * @param role - Rol del usuario
+ * @returns Nombre formateado del rol
  */
-export const formatRole = (role) => {
+export const formatRole = (role: string): string => {
   switch (role?.toLowerCase()) {
     case 'mentor':
       return 'Mentor';
