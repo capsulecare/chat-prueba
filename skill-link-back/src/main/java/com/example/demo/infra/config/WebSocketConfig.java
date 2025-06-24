@@ -22,16 +22,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // ✅ ENDPOINT PRINCIPAL - WebSocket nativo con CORS configurado
+        // ✅ ENDPOINT PRINCIPAL - WebSocket nativo
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns(
                     "http://localhost:*",
                     "https://localhost:*",
                     "http://127.0.0.1:*",
                     "https://127.0.0.1:*"
-                )
-                .setAllowedHeaders("*")
-                .setAllowCredentials(false); // ✅ Importante para WebSocket nativo
+                );
 
         // ✅ ENDPOINT FALLBACK - Con SockJS para compatibilidad
         registry.addEndpoint("/ws-sockjs")
@@ -41,7 +39,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     "http://127.0.0.1:*",
                     "https://127.0.0.1:*"
                 )
-                .setAllowedHeaders("*")
                 .withSockJS()
                 .setHeartbeatTime(25000); // ✅ Heartbeat específico para SockJS
     }
