@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ConversationList } from './conversation/ConversationList';
 import { ChatWindow } from './window/ChatWindow';
-import { useWebSocket } from '../../hooks/useWebSocket';
+import { useWebSocket } from '../../hooks/websocket/useWebSocket';
 import type { ChatUser } from '../../types/api';
 
 interface ChatInterfaceProps {
