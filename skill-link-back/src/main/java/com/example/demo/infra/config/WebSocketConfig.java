@@ -15,7 +15,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // ✅ Broker simple SIN heartbeat para evitar el error
+        // ✅ Broker simple SIN heartbeat para evitar errores en producción
         config.enableSimpleBroker("/topic", "/queue");
         
         // ✅ Prefijo para destinos de aplicación
@@ -27,10 +27,18 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // ✅ ENDPOINT PRINCIPAL - WebSocket nativo
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns(
+                    // ✅ DESARROLLO LOCAL
                     "http://localhost:*",
                     "https://localhost:*",
                     "http://127.0.0.1:*",
-                    "https://127.0.0.1:*"
+                    "https://127.0.0.1:*",
+                    
+                    // ✅ PLATAFORMAS DE DESPLIEGUE
+                    "https://*.netlify.app",
+                    "https://*.vercel.app",
+                    "https://*.onrender.com",
+                    "https://*.herokuapp.com",
+                    "https://*.github.io"
                 );
 
         // ✅ ENDPOINT FALLBACK - Con SockJS para compatibilidad
@@ -39,7 +47,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     "http://localhost:*",
                     "https://localhost:*",
                     "http://127.0.0.1:*",
-                    "https://127.0.0.1:*"
+                    "https://127.0.0.1:*",
+                    "https://*.netlify.app",
+                    "https://*.vercel.app",
+                    "https://*.onrender.com",
+                    "https://*.herokuapp.com",
+                    "https://*.github.io"
                 )
                 .withSockJS();
     }

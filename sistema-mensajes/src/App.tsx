@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from './components/layout/Header';
 import { ChatInterface } from './components/chat/ChatInterface';
 import { UserSelector } from './components/debug/UserSelector';
 import { useChat } from './hooks/useChat';
+import { getApiInfo } from './config/api';
 
 function App() {
   const [activeSection, setActiveSection] = useState('messages');
@@ -21,6 +22,11 @@ function App() {
   
   // ✅ CALCULAR TOTAL DE NO LEÍDOS EN TIEMPO REAL
   const totalUnreadCount = chatData.conversations.reduce((total, conv) => total + conv.unreadCount, 0);
+
+  // ✅ LOG DE CONFIGURACIÓN AL INICIAR
+  useEffect(() => {
+    getApiInfo();
+  }, []);
 
   // ✅ FUNCIÓN CORREGIDA PARA SELECCIONAR CONVERSACIÓN DESDE NOTIFICACIONES
   const handleSelectConversationFromNotification = (conversationId: number) => {

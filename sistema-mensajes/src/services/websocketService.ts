@@ -26,37 +26,42 @@ class WebSocketService {
       return Promise.resolve();
     }
 
+    // ✅ USAR URL DINÁMICA DESDE CONFIG
+    const wsUrl = API_CONFIG.WEBSOCKET.URL;
     console.log('🚀 Iniciando nueva conexión WebSocket...');
-    console.log('🔗 URL: ws://localhost:8080/ws');
+    console.log('🔗 URL:', wsUrl);
 
     this.connectionPromise = new Promise((resolve, reject) => {
       this.client = new Client({
-        // ✅ CONFIGURACIÓN MEJORADA
+        // ✅ CONFIGURACIÓN MEJORADA PARA PRODUCCIÓN
         webSocketFactory: () => {
-          const ws = new WebSocket('ws://localhost:8080/ws');
+          const ws = new WebSocket(wsUrl);
           
           // ✅ Logs detallados para debugging
-          ws.onopen = () => console.log('🔌 WebSocket nativo conectado');
+          ws.onopen = () => console.log('🔌 WebSocket nativo conectado a:', wsUrl);
           ws.onerror = (error) => console.error('❌ WebSocket nativo error:', error);
           ws.onclose = (event) => console.log('🔌 WebSocket nativo cerrado:', event.code, event.reason);
           
           return ws;
         },
         
-        // ✅ CONFIGURACIÓN DE RECONEXIÓN MEJORADA
+        // ✅ CONFIGURACIÓN DE RECONEXIÓN MEJORADA PARA PRODUCCIÓN
         reconnectDelay: 5000,
         heartbeatIncoming: 10000,
         heartbeatOutgoing: 10000,
         
-        // ✅ CONFIGURACIÓN DE TIMEOUTS
-        connectionTimeout: 10000,
+        // ✅ TIMEOUT MÁS LARGO PARA CONEXIONES LENTAS
+        connectionTimeout: 15000,
         
         debug: (str) => {
-          console.log('🔍 STOMP Debug:', str);
+          // ✅ Solo logs importantes en producción
+          if (!import.meta.env.PROD || str.includes('ERROR') || str.includes('CONNECT')) {
+            console.log('🔍 STOMP:', str);
+          }
         },
         
         onConnect: (frame) => {
-          console.log('✅ STOMP conectado exitosamente!', frame);
+          console.log('✅ STOMP conectado exitosamente a:', wsUrl);
           this.connected = true;
           this.reconnectAttempts = 0; // ✅ Reset contador
           this.connectionPromise = null;
