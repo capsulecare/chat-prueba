@@ -2,9 +2,11 @@ package com.example.demo.chat.controller;
 
 import com.example.demo.chat.dto.EnviarMensajeRequest;
 import com.example.demo.chat.dto.MarcarLeidosRequest;
+import com.example.demo.chat.dto.MensajeCompletoDTO;
 import com.example.demo.chat.dto.MensajeDTO;
 import com.example.demo.chat.model.Mensaje;
 import com.example.demo.chat.service.ChatService;
+import com.example.demo.chat.service.MensajeTransformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -21,6 +23,9 @@ public class MensajeController {
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    private MensajeTransformService mensajeTransformService;
 
     @PostMapping
     public ResponseEntity<Mensaje> enviarMensaje(@RequestBody EnviarMensajeRequest request) {
@@ -39,19 +44,10 @@ public class MensajeController {
         try {
             System.out.println("REST: Enviando notificación WebSocket a topic: /topic/conversacion/" + request.getIdConversacion());
 
-            MensajeCompleto mensajeCompleto = new MensajeCompleto();
-            mensajeCompleto.setId(mensaje.getId());
-            mensajeCompleto.setContenido(mensaje.getContenido());
-            mensajeCompleto.setLeido(mensaje.isLeido());
-            mensajeCompleto.setTimestampEnvio(mensaje.getTimestampEnvio().toString());
+            // ✅ USAR SERVICIO DE TRANSFORMACIÓN
+            MensajeCompletoDTO mensajeCompleto = mensajeTransformService.transformToCompleteDTO(mensaje);
 
-            EmisorCompleto emisor = new EmisorCompleto();
-            emisor.setId(mensaje.getEmisor().getId());
-            emisor.setNombre(mensaje.getEmisor().getName());
-            emisor.setEmail(mensaje.getEmisor().getEmail());
-            mensajeCompleto.setEmisor(emisor);
-
-            System.out.println("REST: Enviando mensaje completo con emisor: " + emisor.getName());
+            System.out.println("REST: Enviando mensaje completo con emisor: " + mensajeCompleto.getEmisor().getNombre());
 
             messagingTemplate.convertAndSend(
                     "/topic/conversacion/" + request.getIdConversacion(),
@@ -97,46 +93,5 @@ public class MensajeController {
     public ResponseEntity<Void> marcarMensajesComoLeidos(@RequestBody MarcarLeidosRequest request) {
         chatService.marcarMensajesComoLeidos(request.getIdConversacion(), request.getIdUsuario());
         return ResponseEntity.ok().build();
-    }
-
-    // CLASES INTERNAS PARA MENSAJE COMPLETO
-    public static class MensajeCompleto {
-        private Long id;
-        private String contenido;
-        private boolean leido;
-        private String timestampEnvio;
-        private EmisorCompleto emisor;
-
-        // Getters y setters
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-
-        public String getContenido() { return contenido; }
-        public void setContenido(String contenido) { this.contenido = contenido; }
-
-        public boolean isLeido() { return leido; }
-        public void setLeido(boolean leido) { this.leido = leido; }
-
-        public String getTimestampEnvio() { return timestampEnvio; }
-        public void setTimestampEnvio(String timestampEnvio) { this.timestampEnvio = timestampEnvio; }
-
-        public EmisorCompleto getEmisor() { return emisor; }
-        public void setEmisor(EmisorCompleto emisor) { this.emisor = emisor; }
-    }
-
-    public static class EmisorCompleto {
-        private Long id;
-        private String nombre;
-        private String email;
-
-        // Getters y setters
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-
-        public String getName() { return nombre; }
-        public void setNombre(String nombre) { this.nombre = nombre; }
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
     }
 }

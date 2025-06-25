@@ -1,10 +1,12 @@
 package com.example.demo.chat.controller;
 
 import com.example.demo.chat.dto.MarcarLeidosRequest;
+import com.example.demo.chat.dto.MensajeCompletoDTO;
 import com.example.demo.chat.dto.MensajeWebSocketDTO;
 import com.example.demo.chat.dto.UsuarioEscribiendoDTO;
 import com.example.demo.chat.model.Mensaje;
 import com.example.demo.chat.service.ChatService;
+import com.example.demo.chat.service.MensajeTransformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -19,6 +21,9 @@ public class WebSocketController {
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    private MensajeTransformService mensajeTransformService;
 
     // 📩 Enviar mensaje por WebSocket
     @MessageMapping("/chat.enviarMensaje")
@@ -43,29 +48,24 @@ public class WebSocketController {
         System.out.println("Emisor verificado: " + nuevoMensaje.getEmisor().getName() + " (ID: " + nuevoMensaje.getEmisor().getId() + ")");
         System.out.println("Enviando a topic: /topic/conversacion/" + dto.getIdConversacion());
 
-        // CRÍTICO: Crear objeto completo para enviar por WebSocket
-        MensajeCompleto mensajeCompleto = new MensajeCompleto();
-        mensajeCompleto.setId(nuevoMensaje.getId());
-        mensajeCompleto.setContenido(nuevoMensaje.getContenido());
-        mensajeCompleto.setLeido(nuevoMensaje.isLeido());
-        mensajeCompleto.setTimestampEnvio(nuevoMensaje.getTimestampEnvio().toString());
+        try {
+            // ✅ USAR SERVICIO DE TRANSFORMACIÓN
+            MensajeCompletoDTO mensajeCompleto = mensajeTransformService.transformToCompleteDTO(nuevoMensaje);
+            
+            System.out.println("Enviando mensaje completo con emisor: " + mensajeCompleto.getEmisor().getNombre());
 
-        // INCLUIR EMISOR COMPLETO
-        EmisorCompleto emisor = new EmisorCompleto();
-        emisor.setId(nuevoMensaje.getEmisor().getId());
-        emisor.setNombre(nuevoMensaje.getEmisor().getName());
-        emisor.setEmail(nuevoMensaje.getEmisor().getEmail());
-        mensajeCompleto.setEmisor(emisor);
+            // ENVIAR MENSAJE COMPLETO A TODOS LOS SUSCRIPTORES
+            messagingTemplate.convertAndSend(
+                    "/topic/conversacion/" + dto.getIdConversacion(),
+                    mensajeCompleto
+            );
 
-        System.out.println("Enviando mensaje completo con emisor: " + emisor.getName());
-
-        // ENVIAR MENSAJE COMPLETO A TODOS LOS SUSCRIPTORES
-        messagingTemplate.convertAndSend(
-                "/topic/conversacion/" + dto.getIdConversacion(),
-                mensajeCompleto
-        );
-
-        System.out.println("Mensaje enviado por WebSocket exitosamente!");
+            System.out.println("Mensaje enviado por WebSocket exitosamente!");
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error transformando o enviando mensaje: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     // Notificar que un usuario está escribiendo
@@ -91,46 +91,5 @@ public class WebSocketController {
                 "/topic/conversacion/" + request.getIdConversacion() + "/leido",
                 request.getIdUsuario()
         );
-    }
-
-    // CLASES INTERNAS PARA MENSAJE COMPLETO
-    public static class MensajeCompleto {
-        private Long id;
-        private String contenido;
-        private boolean leido;
-        private String timestampEnvio;
-        private EmisorCompleto emisor;
-
-        // Getters y setters
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-
-        public String getContenido() { return contenido; }
-        public void setContenido(String contenido) { this.contenido = contenido; }
-
-        public boolean isLeido() { return leido; }
-        public void setLeido(boolean leido) { this.leido = leido; }
-
-        public String getTimestampEnvio() { return timestampEnvio; }
-        public void setTimestampEnvio(String timestampEnvio) { this.timestampEnvio = timestampEnvio; }
-
-        public EmisorCompleto getEmisor() { return emisor; }
-        public void setEmisor(EmisorCompleto emisor) { this.emisor = emisor; }
-    }
-
-    public static class EmisorCompleto {
-        private Long id;
-        private String nombre;
-        private String email;
-
-        // Getters y setters
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-
-        public String getName() { return nombre; }
-        public void setNombre(String nombre) { this.nombre = nombre; }
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
     }
 }
